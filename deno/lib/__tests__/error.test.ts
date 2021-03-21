@@ -2,9 +2,9 @@
 import { expect } from "https://deno.land/x/expect@v0.2.6/mod.ts";
 const test = Deno.test;
 
+import { ZodParsedType } from "../helpers/parseUtil.ts";
 import * as z from "../index.ts";
 import { ZodError, ZodIssueCode } from "../ZodError.ts";
-import { ZodParsedType } from "../ZodParsedType.ts";
 
 test("error creation", () => {
   const err1 = ZodError.create([]);
@@ -40,7 +40,7 @@ const errorMap: z.ZodErrorMap = (error, ctx) => {
 
 test("type error with custom error map", () => {
   try {
-    z.string().parse("asdf", { errorMap });
+    z.string().parse(234, { errorMap });
   } catch (err) {
     const zerr: z.ZodError = err;
 
@@ -133,23 +133,23 @@ test("array minimum", () => {
 });
 
 // implement test for semi-smart union logic that checks for type error on either left or right
-test("union smart errors", () => {
-  // expect.assertions(2);
+// test("union smart errors", () => {
+//   // expect.assertions(2);
 
-  const p1 = z
-    .union([z.string(), z.number().refine((x) => x > 0)])
-    .safeParse(-3.2);
+//   const p1 = z
+//     .union([z.string(), z.number().refine((x) => x > 0)])
+//     .safeParse(-3.2);
 
-  if (p1.success === true) throw new Error();
-  expect(p1.success).toBe(false);
-  expect(p1.error.issues[0].code).toEqual(ZodIssueCode.custom);
+//   if (p1.success === true) throw new Error();
+//   expect(p1.success).toBe(false);
+//   expect(p1.error.issues[0].code).toEqual(ZodIssueCode.custom);
 
-  const p2 = z.union([z.string(), z.number()]).safeParse(false);
-  // .catch(err => expect(err.issues[0].code).toEqual(ZodIssueCode.invalid_union));
-  if (p2.success === true) throw new Error();
-  expect(p2.success).toBe(false);
-  expect(p2.error.issues[0].code).toEqual(ZodIssueCode.invalid_union);
-});
+//   const p2 = z.union([z.string(), z.number()]).safeParse(false);
+//   // .catch(err => expect(err.issues[0].code).toEqual(ZodIssueCode.invalid_union));
+//   if (p2.success === true) throw new Error();
+//   expect(p2.success).toBe(false);
+//   expect(p2.error.issues[0].code).toEqual(ZodIssueCode.invalid_union);
+// });
 
 test("custom path in custom error map", () => {
   const schema = z.object({
@@ -198,3 +198,75 @@ test("error metadata from value", () => {
 
 //   expect(() => asdf.safeParse("foo")).not.toThrow();
 // });
+
+test("root level formatting", () => {
+  const schema = z.string().email();
+  const result = schema.safeParse("asdfsdf");
+  expect(result.success).toEqual(false);
+  if (!result.success) {
+    expect(result.error.format()._errors).toEqual(["Invalid email"]);
+  }
+});
+
+test("custom path", () => {
+  const schema = z
+    .object({
+      password: z.string(),
+      confirm: z.string(),
+    })
+    .refine((val) => val.confirm === val.password, { path: ["confirm"] });
+
+  const result = schema.safeParse({
+    password: "peanuts",
+    confirm: "qeanuts",
+  });
+
+  expect(result.success).toEqual(false);
+  if (!result.success) {
+    const error = result.error.format();
+    expect(error._errors).toEqual([]);
+    expect(error.password?._errors).toEqual(undefined);
+    expect(error.confirm?._errors).toEqual(["Invalid input."]);
+  }
+});
+
+test("formatting", () => {
+  const schema = z.object({
+    inner: z.object({
+      name: z
+        .string()
+        .refine((val) => val.length > 5)
+        .array()
+        .refine((val) => val.length <= 1),
+    }),
+  });
+
+  const invalidItem = {
+    inner: { name: ["aasd", "asdfasdfasfd"] },
+  };
+  const invalidArray = {
+    inner: { name: ["asdfasdf", "asdfasdfasfd"] },
+  };
+  const result1 = schema.safeParse(invalidItem);
+  const result2 = schema.safeParse(invalidArray);
+
+  expect(result1.success).toEqual(false);
+  expect(result2.success).toEqual(false);
+  if (!result1.success) {
+    const error = result1.error.format();
+    expect(error._errors).toEqual([]);
+    expect(error.inner?._errors).toEqual([]);
+    expect(error.inner?.name?._errors).toEqual([]);
+    expect(error.inner?.name?.[0]._errors).toEqual(["Invalid value."]);
+    expect(error.inner?.name?.[1]).toEqual(undefined);
+  }
+  if (!result2.success) {
+    const error = result2.error.format();
+    expect(error._errors).toEqual([]);
+    expect(error.inner?._errors).toEqual([]);
+    expect(error.inner?.name?._errors).toEqual(["Invalid value."]);
+    expect(error.inner?.name?.[0]).toEqual(undefined);
+    expect(error.inner?.name?.[1]).toEqual(undefined);
+    expect(error.inner?.name?.[2]).toEqual(undefined);
+  }
+});

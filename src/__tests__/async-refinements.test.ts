@@ -1,7 +1,7 @@
 // @ts-ignore TS6133
 import { expect, test } from "@jest/globals";
 
-import * as z from "..";
+import * as z from "../index";
 
 test("parse async test", async () => {
   const schema1 = z.string().refine(async (_val) => false);
@@ -39,7 +39,7 @@ test("parseAsync async with value", async () => {
   const schema1 = z.string().refine(async (val) => {
     return val.length > 5;
   });
-  expect(schema1.parseAsync("asdf")).rejects.toBeDefined();
+  await expect(schema1.parseAsync("asdf")).rejects.toBeDefined();
 
   const v = await schema1.parseAsync("asdf123");
   return await expect(v).toEqual("asdf123");

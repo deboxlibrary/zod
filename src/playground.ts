@@ -1,9 +1,9 @@
-import * as z from ".";
+import { z } from "./index";
 
-const numberWithRandomDefault = z.number().default(Math.random);
-console.log(numberWithRandomDefault.parse(undefined));
-console.log(numberWithRandomDefault.parse(undefined));
-console.log(numberWithRandomDefault.parse(undefined));
-console.log(numberWithRandomDefault.parse(undefined));
+const run = async () => {
+  z;
+};
+
+run();
 
 export {};

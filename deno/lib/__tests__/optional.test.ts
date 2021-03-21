@@ -36,3 +36,8 @@ test("Should have error messages appropriate for the underlying type", () => {
   checkErrors(z.unknown(), 1);
   z.unknown().optional().parse(undefined);
 });
+
+test("unwrap", () => {
+  const unwrapped = z.string().optional().unwrap();
+  expect(unwrapped).toBeInstanceOf(z.ZodString);
+});
