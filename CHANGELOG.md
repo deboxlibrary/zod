@@ -1,5 +1,26 @@
 # Changelog
 
+### 3.0.0-beta.1
+
+- Moved default value logic into ZodDefault. Implemented `.nullish()` method.
+
+### 3.0.0-alpha.33
+
+- Added `.returnType` and `.parameters` methods to ZodFunction
+
+### 3.0.0-alpha.32
+
+- Added `.required()` method to ZodObject
+
+### 3.0.0-alpha.30
+
+- Added Rollup for bundling ESM module
+
+### zod@3.0.0-alpha.24
+
+- Added back ZodIntersection
+- Added .and() method to base class
+
 ### zod@3.0.0-alpha.9
 
 - Added `z.strictCreate`

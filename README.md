@@ -11,15 +11,36 @@
 
 </p>
 <p align="center">
-if you're happy and you know it, star this repo ⭐
+⭐️ smash that star button ⭐️
 </p>
 
 <br/>
+
+## May 17, 2021: Zod v3 is now in stable release!
+
+Check out the [Migration Guide](https://github.com/colinhacks/zod/blob/master/MIGRATION.md) to upgrade.
+
+Previous versions:
+
+- [`Zod 1 docs`](https://github.com/colinhacks/zod/tree/v1)
+- [`Zod 2 docs`](https://github.com/colinhacks/zod/tree/v2)
+
+#### New features
+
+- **Easier imports**: you can now import Zod like `import { z } from 'zod';` instead of using `import * as` syntax.
+- **Structured error messages**. Use the `.format()` method to ZodError to convert the error into a strongly-typed, nested object: [format method](#error-formatting)
+- **Easier unions**. Use the `or` method to ZodType (the base class for all Zod schemas) to easily create union types like `z.string().or(z.number())`
+- **Easier intersections**. Use the `and` method to ZodType (the base class for all Zod schemas) to easily create intersection types
+- **Global error customization**. Use `z.setErrorMap(myErrorMap)` to _globally_ customize the error messages produced by Zod: [setErrorMap](ERROR_HANDLING.md#customizing-errors-with-zoderrormap)
+- **Maps and sets**. Zod now supports [`Map`](#maps) and [`Set`](#set) schemas.
+- **Optional and nullable unwrapping**. ZodOptional and ZodNullable now have a `.unwrap()` method for retrieving the schema they wrap.
+- **A new implementation of transformers**. See the [Migration Guide](https://github.com/colinhacks/zod/blob/master/MIGRATION.md) section to understand the syntax changes.
 
 # Table of contents
 
 - [What is Zod](#what-is-zod)
 - [Installation](#installation)
+- [Ecosystem](#ecosystem)
 - [Basic usage](#basic-usage)
 - [Defining schemas](#defining-schemas)
   - [Primitives](#primitives)
@@ -62,10 +83,12 @@ if you're happy and you know it, star this repo ⭐
   - [.safeParse](#safeparse)
   - [.safeParseAsync](#safeparseasync)
   - [.refine](#refine)
+  - [.superRefine](#superRefine)
   - [.transform](#transform)
   - [.default](#default)
   - [.optional](#optional)
   - [.nullable](#nullable)
+  - [.nullish](#nullish)
   - [.array](#array)
   - [.or](#or)
   - [.and](#and)
@@ -79,63 +102,6 @@ if you're happy and you know it, star this repo ⭐
 - [Changelog](#changelog)
 
 <!-- **Zod 2 is coming! Follow [@colinhacks](https://twitter.com/colinhacks) to stay updated and discuss the future of Zod.** -->
-
-## Zod v3 is in alpha
-
-#### New features
-
-- Transformers! But better! See the "breaking changes" section to understand the syntax changes.
-- You can now import Zod like `import { z } a from 'zod';` instead of using `import * as` syntax.
-- Added the `format` method to ZodError to convert the error into a strongly-typed, nested object: [format method](#error-formatting)
-- Added the `or` method to ZodType (the base class for all Zod schemas) to easily create union types like `z.string().or(z.number())`
-- Added the `and` method to ZodType (the base class for all Zod schema) to easily create intersection types
-- Added `z.setErrorMap`, an easier way to _globally_ customize the error messages produced by Zod: [setErrorMap](ERROR_HANDLING.md#customizing-errors-with-zoderrormap)
-- ZodOptional and ZodNullable now have a `.unwrap()` method for retrieving the schema they wrap
-
-#### Breaking changes in v3
-
-- The **minimum TypeScript version** is now _4.1_ (up from 3.7 for Zod 2). Several features have been rewritten to use [recursive conditional types](https://devblogs.microsoft.com/typescript/announcing-typescript-4-1/#recursive-conditional-types), an incredibly powerful new feature introduced in TS4.1.
-
-- **Transformers syntax**. Previously, creating a transformer required an input schema, an output schema, and a function to tranform between them. You created transformers like `z.transform(A, B, func)`, where `A` and `B` are Zod schemas. This is no longer the case. Accordingly:
-
-  The old syntax (`z.transformer(A, B, func)`) is no longer available.
-
-  The convenience method `A.transform(B, func)` is no longer available.
-
-  Instead, you apply transformations by simply using the `.transform()` method that exists on all Zod schemas.
-
-  ```ts
-  z.string().transform((val) => val.length);
-  ```
-
-- Under the hood, all refinements and transformations are executed inside a dedicated "ZodEffects" class. Post-parsing, ZodEffects passes the data through a chain of refinements and transformations, then returns the final value. As such, you can now _interleave_ transformations and refinements. For instance:
-
-  ```ts
-  const test = z
-    .string()
-    .transform((val) => val.length)
-    .refine((val) => val > 5, { message: "Input is too short" })
-    .transform((val) => val * 2);
-
-  test.parse("12characters"); // => 24
-  ```
-
-- **Type guards** (the `.check()` method) have been removed. Type guards interact with transformers in unintuitive ways so they were removed. Use `.safeParse` instead.
-- Object merging now behaves differently. If you merge two object schema (`A.merge(B)`), the fields of B will overwrite the fields of A if there are shared keys. This is how the `.extend` method already works. If you're looking to create an intersection of the two types, use `z.intersection(A, B)` or use the new `.and` method (`A.and(B)`).
-- There have been small internal changes to the ZodIssue type. This may impact user who have written a custom error maps. Most users will not be affected.
-
-#### Migrating from v1
-
-If you're upgrading straight to v3 from v1, you'll need to be aware of the breaking changes introduced in both v2 and v3. The v1->v2 migration guide is [here](https://github.com/colinhacks/zod/tree/v2#migration-from-v1).
-
-#### Migrating from v2
-
-Zod 2 is being retired and will not leave beta. This is due to some issues with it's implementation of transformers: details [here](https://github.com/colinhacks/zod/issues/264). Zod 3 is currently in alpha — install it at `zod@next`. (Zod 2 will continue to be available with `zod@beta` for the time being.)
-
-```
-npm install zod@next
-yarn add zod@next
-```
 
 # What is Zod
 
@@ -161,6 +127,15 @@ Sponsorship at any level is appreciated and encouraged. Zod is maintained by a s
 
 <table>
   <tr>
+   <td align="center">
+      <a href="https://deletype.com/">
+        <img src="https://avatars0.githubusercontent.com/u/15068039?s=200&v=4" width="100px;" alt="" />
+      </a>
+      <br>
+      <b>Deletype</b>
+      <br>
+      <a href="https://deletype.com/">https://deletype.com/</a>
+    </td>
   <td align="center">
       <a href="https://github.com/kevinsimper">
         <img src="https://avatars1.githubusercontent.com/u/1126497?s=460&v=4" width="100px;" alt="" />
@@ -181,6 +156,9 @@ Sponsorship at any level is appreciated and encouraged. Zod is maintained by a s
       <span>creator of <a href="https://blitzjs.com">Blitz.js</a></span>
       <br />
     </td>
+    
+  </tr>
+  <tr>
     <td align="center">
       <a href="https://www.bamboocreative.nz/">
         <img src="https://avatars1.githubusercontent.com/u/41406870?s=460&v=4" width="100px;" alt="" />
@@ -189,6 +167,24 @@ Sponsorship at any level is appreciated and encouraged. Zod is maintained by a s
       <b>Bamboo Creative</b>
       <br>
       <a href="https://www.bamboocreative.nz/">https://bamboocreative.nz</a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/jeremyBanks">
+        <img src="https://avatars.githubusercontent.com/u/18020?s=400&u=dba6c1402ae1746a276a5d256e01d68e774a0e9d&v=4" width="100px;" alt="" />
+      </a>
+      <br>
+      <b>Jeremy Banks</b>
+      <br>
+      <a href="https://github.com/jeremyBanks">github.com/jeremyBanks</a>
+    </td>
+     <td align="center">
+      <a href="https://marcatopartners.com/">
+        <img src="https://avatars.githubusercontent.com/u/84106192?s=200&v=4" width="100px;" alt="Marcato Partners" />
+      </a>
+      <br>
+      <b>Marcato Partners</b>
+      <br>
+      <a href="https://marcatopartners.com/">marcatopartners.com</a>
     </td>
   </tr>
 </table>
@@ -200,16 +196,10 @@ _To get your name + Twitter + website here, sponsor Zod at the [Freelancer](http
 To install Zod v3:
 
 ```sh
-npm install zod@next
+npm install zod
 ```
 
-#### TypeScript requirements
-
-- Zod 3.x requires TypeScript 4.1+
-- Zod 2.x requires TypeScript 3.7+
-- Zod 1.x requires TypeScript 3.3+
-
-⚠️ You must enable `strict` mode in your `tsconfig.json`. This is a best practice for all TypeScript projects:
+⚠️ IMPORTANT: You must enable `strict` mode in your `tsconfig.json`. This is a best practice for all TypeScript projects.
 
 ```ts
 // tsconfig.json
@@ -221,6 +211,22 @@ npm install zod@next
   }
 }
 ```
+
+#### TypeScript requirements
+
+- Zod 3.x requires TypeScript 4.1+
+- Zod 2.x requires TypeScript 3.7+
+- Zod 1.x requires TypeScript 3.3+
+
+# Ecosystem
+
+There are a growing number of tools that are built atop or support Zod natively! If you've built a tool or library on top of Zod, tell me about it [on Twitter](https://twitter.com/colinhacks) or [start a Discussion](https://github.com/colinhacks/zod/discussions). I'll add it below and tweet it out.
+
+- [`react-hook-form`](https://github.com/react-hook-form/resolvers): Build type-safe forms easily with React Hook Form and the Zod resolver.
+- [`ts-to-zod`](https://github.com/fabien0102/ts-to-zod): Convert TypeScript definitions into Zod schemas.
+- [`zod-mocking`](https://github.com/dipasqualew/zod-mocking): Generate mock data from your Zod schemas.
+- [`zod-fast-check`](https://github.com/DavidTimms/zod-fast-check): Generate `fast-check` arbitraries from Zod schemas.
+- [`zod-endpoints`](https://github.com/flock-community/zod-endpoints): Contract-first strictly typed endpoints with Zod. OpenAPI compatible.
 
 # Basic usage
 
@@ -295,13 +301,15 @@ const tru = z.literal(true);
 Zod includes a handful of string-specific validations.
 
 ```ts
-z.string().min(5);
 z.string().max(5);
+z.string().min(5);
 z.string().length(5);
 z.string().email();
 z.string().url();
 z.string().uuid();
 z.string().regex(regex);
+
+// deprecated, equivalent to .min(1)
 z.string().nonempty();
 ```
 
@@ -386,7 +394,7 @@ You can use `.extend` to overwrite fields! Be careful with this power!
 
 ### `.merge`
 
-Equivalent to `A.merge(B.shape)`.
+Equivalent to `A.extend(B.shape)`.
 
 ```ts
 const BaseTeacher = z.object({ students: z.array(z.string()) });
@@ -396,7 +404,7 @@ const Teacher = BaseTeacher.merge(HasID);
 type Teacher = z.infer<typeof Teacher>; // => { students: string[], id: string }
 ```
 
-> If the two schemas share keys, the properties of the _merged schema_ take precedence.
+> If the two schemas share keys, the properties of B overrides the property of A. The returned schema also inherits the "unknownKeys" policy (strip/strict/passthrough) and the catchall schema of B.
 
 ### `.pick/.omit`
 
@@ -872,7 +880,24 @@ FruitEnum.parse("Cantaloupe"); // fails
 
 <!-- > ⚠️ Intersections are deprecated. If you are trying to merge objects, use the `.merge` method instead. -->
 
-Intersections are useful for creating "logical AND" types.
+Intersections are useful for creating "logical AND" types. This is useful for intersecting two object types.
+
+```ts
+const Person = z.object({
+  name: z.string(),
+});
+
+const Employee = z.object({
+  role: z.string(),
+});
+
+const EmployedPerson = z.intersection(Person, Employee);
+
+// equivalent to:
+const EmployedPerson = Person.and(Employee);
+```
+
+Though in many cases, it is recommended to use `A.merge(B)` to merge two objects. The `.merge` method returns a new `ZodObject` instance, whereas `A.and(B)` returns a less useful `ZodIntersection` instance that lacks common object methods like `pick` and `omit`.
 
 ```ts
 const a = z.union([z.number(), z.string()]);
@@ -880,9 +905,6 @@ const b = z.union([z.number(), z.boolean()]);
 const c = z.intersection(a, b);
 
 type c = z.infer<typeof c>; // => number
-
-const stringAndNumber = z.intersection(z.string(), z.number());
-type Never = z.infer<typeof stringAndNumber>; // => never
 ```
 
 <!-- Intersections in Zod are not smart. Whatever data you pass into `.parse()` gets passed into the two intersected schemas. Because Zod object schemas don't allow any unknown keys by default, there are some unintuitive behavior surrounding intersections of object schemas. -->
@@ -1057,7 +1079,7 @@ type myFunction = z.infer<typeof myFunction>;
 // => ()=>unknown
 ```
 
-You can use the `.args` and `.returns` methods to refine your function schema:
+**Define inputs and output**
 
 ```ts
 const myFunction = z
@@ -1066,6 +1088,17 @@ const myFunction = z
   .returns(z.boolean());
 type myFunction = z.infer<typeof myFunction>;
 // => (arg0: string, arg1: number)=>boolean
+```
+
+**Extract the input and output schemas**
+You can extract the parameters and return type of a function schema.
+
+```ts
+myFunction.parameters();
+// => ZodTuple<[ZodString, ZodNumber]>
+
+myFunction.returnType();
+// => ZodBoolean
 ```
 
 <!-- `z.function()` accepts two arguments:
@@ -1191,7 +1224,7 @@ await stringSchema.spa("billie");
 
 `.refine(validator: (data:T)=>any, params?: RefineParams)`
 
-Zod lets you provide custom validation logic via _refinements_.
+Zod lets you provide custom validation logic via _refinements_. (For advanced features like creating multiple issues and customizing error codes, see [`.superRefine`](#superrefine).)
 
 Zod was designed to mirror TypeScript as closely as possible. But there are many so-called "refinement types" you may wish to check for that can't be represented in TypeScript's type system. For instance: checking that a number is an integer or that a string is a valid email address.
 
@@ -1310,6 +1343,35 @@ ZodError {
 }
 ``` -->
 
+### `.superRefine`
+
+The `.refine` method is actually syntactic sugar atop a more versatile (and verbose) method called `superRefine`. Here's an example:
+
+```ts
+const Strings = z.array(z.string()).superRefine((val, ctx) => {
+  if (val.length > 3) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.too_big,
+      maximum: 3,
+      type: "array",
+      inclusive: true,
+      message: "Too many items 😡",
+    });
+  }
+
+  if (val.length !== new Set(val).size) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `No duplicated allowed.`,
+    });
+  }
+});
+```
+
+You can add as many issues as you like. If `ctx.addIssue` is NOT called during the execution of the function, validation passes.
+
+Normally refinements always create issues with a `ZodIssueCode.custom` error code, but with `superRefine` you can create any issue of any code. Each issue code is described in detail in the Error Handling guide (ERROR_HANDLING.md).
+
 ### `.transform`
 
 To transform data after parsing, use the `transform` method.
@@ -1402,6 +1464,17 @@ const nullableString = z.string().nullable(); // string | null
 z.nullable(z.string());
 ```
 
+### `.nullish`
+
+A convenience method that returns a "nullish" version of a schema. Nullish schemas will accept both `undefined` and `null`. Read more about the concept of "nullish" [here](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#nullish-coalescing).
+
+```ts
+const nullishString = z.string().nullish(); // string | null | undefined
+
+// equivalent to
+z.string().optional().nullable();
+```
+
 ### `.array`
 
 A convenience method that returns an array schema for the given type:
@@ -1454,17 +1527,19 @@ In reality each Zod schema is actually associated with **two** types: an input a
 You can separately extract the input and output types like so:
 
 ```ts
-const stringToNumber = z.string().transform(val => val.length)
+const stringToNumber = z.string().transform((val) => val.length);
 
 // ⚠️ Important: z.infer returns the OUTPUT type!
-type type = z.infer<stringToNumber>; // number
-type out = z.output<stringToNumber>; // number, equivalent to z.infer
-type in = z.input<stringToNumber>; // string, returns input type
+type input = z.input<stringToNumber>; // string
+type output = z.output<stringToNumber>; // number
+
+// equivalent to z.output!
+type inferred = z.infer<stringToNumber>; // number
 ```
 
 # Errors
 
-Zod provides a subclass of Error called ZodError. ZodErrors contain an `issues` array containing detailed information about the validation problems.
+Zod provides a subclass of Error called `ZodError`. ZodErrors contain an `issues` array containing detailed information about the validation problems.
 
 ```ts
 const data = z
@@ -1639,13 +1714,10 @@ Good type inference support, but limited options for object type masking (no `.p
 
 - Supports "pattern matching": computed properties that distribute over unions
 - Supports readonly types
-- Missing object methods: (pick, omit, partial, deepPartial, merge, extend)
+- Missing object methods: (deepPartial, merge)
 - Missing nonempty arrays with proper typing (`[T, ...T[]]`)
-- Missing lazy/recursive types
 - Missing promise schemas
-- Missing union & intersection schemas
 - Missing error customization
-- Missing record schemas (their "record" is equivalent to Zod "object")
 
 #### Ow
 

@@ -266,7 +266,7 @@ type ErrorMapCtx = {
 };
 
 export type ZodErrorMap = typeof defaultErrorMap;
-export let defaultErrorMap = (
+export const defaultErrorMap = (
   error: ZodIssueOptionalMessage,
   _ctx: ErrorMapCtx
 ): { message: string } => {
@@ -352,19 +352,21 @@ export let defaultErrorMap = (
       else message = "Invalid input";
       break;
     case ZodIssueCode.custom:
-      message = `Invalid input.`;
+      message = `Invalid input`;
       break;
     case ZodIssueCode.invalid_intersection_types:
       message = `Intersections only support objects`;
       break;
     default:
-      message = `Invalid input.`;
+      message = _ctx.defaultError;
       util.assertNever(error);
   }
   return { message };
-  // return `Invalid input.`;
+  // return `Invalid input`;
 };
 
+export let overrideErrorMap = defaultErrorMap;
+
 export const setErrorMap = (map: ZodErrorMap) => {
-  defaultErrorMap = map;
+  overrideErrorMap = map;
 };
