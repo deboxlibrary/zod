@@ -93,10 +93,8 @@ export type DenormalizedError = { [k: string]: DenormalizedError | string[] };
 
 export type ZodIssueOptionalMessage =
   | ZodInvalidTypeIssue
-  // | ZodNonEmptyArrayIsEmptyIssue
   | ZodUnrecognizedKeysIssue
   | ZodInvalidUnionIssue
-  // | ZodInvalidLiteralValueIssue
   | ZodInvalidEnumValueIssue
   | ZodInvalidArgumentsIssue
   | ZodInvalidReturnTypeIssue
@@ -110,17 +108,20 @@ export type ZodIssueOptionalMessage =
 export type ZodIssue = ZodIssueOptionalMessage & { message: string };
 
 export const quotelessJson = (obj: any) => {
-  const json = JSON.stringify(obj, null, 2); // {"name":"John Smith"}
+  const json = JSON.stringify(obj, null, 2);
   return json.replace(/"([^"]+)":/g, "$1:");
 };
 
-export type ZodFormattedError<T> = T extends [any, ...any]
-  ? { [K in keyof T]?: ZodFormattedError<T[K]> } & { _errors: string[] }
+export type ZodFormattedError<T> = { _errors: string[] } & (T extends [
+  any,
+  ...any
+]
+  ? { [K in keyof T]?: ZodFormattedError<T[K]> }
   : T extends any[]
-  ? ZodFormattedError<T[number]>[] & { _errors: string[] }
+  ? ZodFormattedError<T[number]>[]
   : T extends object
-  ? { [K in keyof T]?: ZodFormattedError<T[K]> } & { _errors: string[] }
-  : { _errors: string[] };
+  ? { [K in keyof T]?: ZodFormattedError<T[K]> }
+  : { _errors: string[] });
 
 export class ZodError<T = any> extends Error {
   issues: ZodIssue[] = [];
@@ -133,7 +134,11 @@ export class ZodError<T = any> extends Error {
     super();
     // restore prototype chain
     const actualProto = new.target.prototype;
-    Object.setPrototypeOf(this, actualProto);
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(this, actualProto);
+    } else {
+      (this as any).__proto__ = actualProto;
+    }
     this.issues = issues;
   }
 
@@ -148,7 +153,7 @@ export class ZodError<T = any> extends Error {
         } else if (issue.code === "invalid_arguments") {
           processError(issue.argumentsError);
         } else if (issue.path.length === 0) {
-          fieldErrors._errors.push(issue.message);
+          (fieldErrors as any)._errors.push(issue.message);
         } else {
           let curr: any = fieldErrors;
           let i = 0;
